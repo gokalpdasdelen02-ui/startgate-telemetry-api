@@ -31,7 +31,7 @@ startgate-telemetry-api/
 🚀 Kurulum ve Çalıştırma Rehberi
 Projeyi kendi bilgisayarında çalıştırmak için aşağıdaki adımları takip edebilirsin.
 1. Depoyu Klonlayın:
-git clone [https://github.com/gokalpdasdelen02-ui/startgate-telemetry-api.git](https://github.com/gokalpdasdelen02-ui/startgate-telemetry-api.git)
+git clone [https://github.com/gokalpdasdelen02-ui/startgate-telemetry-api.git]
 cd startgate-telemetry-api
 
 2. Sanal Ortam Oluşturun ve Aktif Edin
