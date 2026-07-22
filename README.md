@@ -37,6 +37,9 @@ Projeyi kendi bilgisayarında çalıştırmak için aşağıdaki adımları taki
 
 ```
 git clone https://github.com/gokalpdasdelen02-ui/startgate-telemetry-api.git
+```
+
+```
 cd startgate-telemetry-api
 ```
 
@@ -46,6 +49,9 @@ macOS / Linux için:
 
 ```
 python3 -m venv venv
+```
+
+```
 source venv/bin/activate
 ```
 
@@ -53,6 +59,9 @@ Windows için:
 
 ```
 python -m venv venv
+```
+
+```
 venv\Scripts\activate
 ```
 
