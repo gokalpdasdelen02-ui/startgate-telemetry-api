@@ -27,14 +27,13 @@ startgate-telemetry-api/
 ├── telemetry.db          # SQLite veritabanı dosyası
 ├── requirements.txt      # Proje bağımlılıkları
 └── README.md
-```
 
 🚀 Kurulum ve Çalıştırma Rehberi
 Projeyi kendi bilgisayarında çalıştırmak için aşağıdaki adımları takip edebilirsin.
 
 1. Depoyu Klonlayın:
-   git clone [https://github.com/gokalpdasdelen02-ui/startgate-telemetry-api.git]
-   cd startgate-telemetry-api
+git clone https://github.com/gokalpdasdelen02-ui/startgate-telemetry-api.git
+cd startgate-telemetry-api
 
 2. Sanal Ortam Oluşturun ve Aktif Edin:
 
@@ -47,12 +46,12 @@ python -m venv venv
 venv\Scripts\activate
 
 3. Gerekli Kütüphaneleri Yükleyin:
-   pip install -r requirements.txt
+pip install -r requirements.txt
 
 4. Yerel Sunucuyu Ayağa Kaldırın:
-   uvicorn app.main:app --reload
+uvicorn app.main:app --reload
 
-Sunucu başarıyla çalıştığında terminalde Uvicorn running on http://127.0.0.1:8000 mesajını göreceksiniz.
+Sunucu başarıyla çalıştığında terminalde Uvicorn running on [http://127.0.0.1:8000](http://127.0.0.1:8000) mesajını göreceksiniz.
 
 🧪 API Test Etme ve Dokümantasyon
 FastAPI, otomatik olarak interaktif bir test arayüzü (Swagger UI) oluşturur. Proje çalışırken tarayıcından şu adrese gidebilirsin:
@@ -64,7 +63,4 @@ Bu arayüz üzerinden:
 POST /events uç noktasına örnek JSON verileri göndererek veritabanı kayıt işlemlerini test edebilir,
 
 GET /health uç noktası ile servisin durumunu kontrol edebilirsiniz.
-
-```
-
 ```
