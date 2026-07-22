@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, DateTime
 import datetime
 from .database import Base
+from sqlalchemy import Column, Integer, String, JSON
 
 class GameEvent(Base):
     # veritabanındaki tablo adı
@@ -10,7 +11,7 @@ class GameEvent(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(String, index=True)
     category = Column(String, index=True)
-    event_data = Column(String, nullable=True) 
+    event_data = Column(JSON, nullable=True)
     timestamp = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
     session_id = Column(String, index=True, nullable=True)
     platform = Column(String, index=True, nullable=True)
