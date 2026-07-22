@@ -25,14 +25,9 @@ def health_check():
 
 @app.post("/events")
 def create_event(event: GameEvent, db: Session = Depends(get_db)):
-    # **event.dict() komutu şemadan gelen tüm verileri otomatik olarak alır ve DB'ye yazar. 
-    # Olmayan verileri sormaz, kodun çökmesini engeller!
-    db_event = models.GameEvent(**event.dict()) 
     
-    db.add(db_event)
-    db.commit()
-    db.refresh(db_event)
-    return db_event
+    # GameEvent şemasından gelen verileri alıp, SQLAlchemy modeline dönüştürüyoruz.
+    db_event = models.GameEvent(**event.dict()) 
     
     # 2. bu nesneyi veritabanına ekliyoruz.
     db.add(db_event)
@@ -42,7 +37,7 @@ def create_event(event: GameEvent, db: Session = Depends(get_db)):
     
     # 4. db_event nesnesini güncel verilerle gücelliyoruz.
     db.refresh(db_event)
-    
+    # 5. başarılı bir yanıt döndürüyoruz.
     return {
         "status": "success",
         "message": "Event successfully saved to database",
