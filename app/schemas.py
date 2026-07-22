@@ -31,12 +31,34 @@ class ErrorData(BaseModel):
     severity: Literal["debug", "info", "warning", "error", "critical"] = Field(..., description="Hata seviyesi")
     message: str = Field(..., description="Hata mesajı veya stack trace")
 
+class UserData(BaseModel):
+    custom_01: Optional[str] = Field(None, description="Opsiyonel kullanıcı verisi")
+
+class SessionEndData(BaseModel):
+    length: int = Field(..., description="Oturumun uzunluğu (saniye cinsinden)")
+
+class AdData(BaseModel):
+    ad_action: Literal["clicked", "show", "failed", "reward_received", "request"] = Field(
+        ..., description="Kullanıcının reklamla etkileşimi"
+    )
+    ad_type: Literal["video", "rewarded_video", "playable", "interstitial", "banner"] = Field(
+        ..., description="Reklamın formatı"
+    )
+    ad_sdk_name: str = Field(..., description="Reklam ağının adı (örn: admob, unityads)")
+    ad_placement: str = Field(..., description="Reklamın çıktığı yer (örn: end_of_level)")  
+
+class ImpressionData(BaseModel):
+    ad_network_name: str = Field(..., description="Gösterim yapan reklam ağı (örn: ironSource)")
+    ad_network_version: str = Field(..., description="Reklam ağının SDK versiyonu")
+
+class InfoData(BaseModel):
+    message: str = Field(..., description="Gönderilecek log veya bilgi mesajı")
 
 # --- ANA ŞEMA (GAME EVENT) ---
 
 class GameEvent(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.utcnow, description="Etkinlik zamanı")
-    category: Literal["business", "progression", "design", "resource", "error"] = Field(
+    category: Literal["business", "progression", "design", "resource", "error","user","session_end","ad","impression","info"] = Field(
         ..., description="Etkinlik kategorisi"
     )
     platform: str = Field(..., description="Kullanıcı platformu (örn: iOS, Android, Web)")
@@ -51,6 +73,6 @@ class GameEvent(BaseModel):
     v: str = Field(..., description="Oyun/Uygulama versiyonu")
     
     # Tüm alt şemaları Union ile birleştiriyoruz
-    event_data: Union[BusinessData, ProgressionData, DesignData, ResourceData, ErrorData] = Field(
+    event_data: Union[BusinessData, ProgressionData, DesignData, ResourceData, ErrorData, UserData, SessionEndData, AdData, ImpressionData, InfoData] = Field(
         ..., description="Kategoriye özel detaylı veriler"
     )
