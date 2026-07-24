@@ -1,24 +1,85 @@
-from sqlalchemy import Column, Integer, String, DateTime
-import datetime
+from datetime import datetime, timezone
+from sqlalchemy import JSON, Column, DateTime, Integer, String
 from .database import Base
-from sqlalchemy import Column, Integer, String, JSON
+
 
 class GameEvent(Base):
-    # veritabanındaki tablo adı
-    __tablename__ = "events"
+    __tablename__ = "game_events"
 
-    # oluşturduğumuz tablonun kolonları
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(String, index=True)
-    category = Column(String, index=True)
-    event_data = Column(JSON, nullable=True)
-    timestamp = Column(DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc))
-    session_id = Column(String, index=True, nullable=True)
-    platform = Column(String, index=True, nullable=True)
-    session_num = Column(Integer, nullable=True)
-    os_version = Column(String, nullable=True)
-    sdk_version = Column(String, nullable=True)
-    device = Column(String, nullable=True)
-    manufacturer = Column(String, nullable=True)
-    client_ts = Column(Integer, nullable=True)
-    v = Column(String, nullable=True)
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True,
+    )
+
+    user_id = Column(
+        String,
+        index=True,
+        nullable=False,
+    )
+
+    category = Column(
+        String,
+        index=True,
+        nullable=False,
+    )
+
+    event_data = Column(
+        JSON,
+        nullable=False,
+    )
+
+    timestamp = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc)
+    )
+
+    session_id = Column(
+        String,
+        index=True,
+        nullable=False,
+    )
+
+    platform = Column(
+        String,
+        index=True,
+        nullable=False,
+    )
+
+    session_num = Column(
+        Integer,
+        nullable=False,
+    )
+
+    os_version = Column(
+        String,
+        nullable=False,
+    )
+
+    sdk_version = Column(
+        String,
+        nullable=False,
+    )
+
+    device = Column(
+        String,
+        nullable=False,
+    )
+
+    manufacturer = Column(
+        String,
+        nullable=False,
+    )
+
+    client_ts = Column(
+        Integer,
+        nullable=False,
+    )
+
+    v = Column(
+        String,
+        nullable=False,
+    )
+
+
