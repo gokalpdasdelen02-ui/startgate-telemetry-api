@@ -1,6 +1,6 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import Optional, Union, Literal
-from datetime import datetime
+from datetime import datetime, timezone
 
 # --- ORTAK YAPILANDIRMA ---
 class BaseEventData(BaseModel):
@@ -70,7 +70,7 @@ class InfoData(BaseEventData):
 # --- ANA ŞEMA (GAME EVENT) ---
 
 class GameEvent(BaseModel):
-    timestamp: datetime = Field(default_factory=datetime.utcnow, description="Etkinlik zamanı")
+    timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), description="Etkinlik Zamanı")
     category: Literal["business", "progression", "design", "resource", "error","user","session_end","ad","impression","info"] = Field(
         ..., description="Etkinlik kategorisi"
     )
@@ -88,4 +88,30 @@ class GameEvent(BaseModel):
     # Tüm alt şemaları Union ile birleştiriyoruz
     event_data: Union[BusinessData, ProgressionData, DesignData, ResourceData, ErrorData, UserData, SessionEndData, AdData, ImpressionData, InfoData] = Field(
         ..., description="Kategoriye özel detaylı veriler"
+    
     )
+
+    @model_validator(mode="after")
+    def validate_event_data_matches_category(self):
+        category_model_map = {
+            "business": BusinessData,
+            "progression": ProgressionData,
+            "design": DesignData,
+            "resource": ResourceData,
+            "error": ErrorData,
+            "user": UserData,
+            "session_end": SessionEndData,
+            "ad": AdData,
+            "impression": ImpressionData,
+            "info": InfoData,
+        }
+
+        expected_model = category_model_map[self.category]
+
+        if not isinstance(self.event_data, expected_model):
+            raise ValueError(
+                f"'{self.category}' kategorisi için event_data "
+                f"{expected_model.__name__} yapısında olmalıdır."
+            )
+        
+        return self
