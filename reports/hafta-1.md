@@ -1,30 +1,54 @@
 # Hafta 1 Durum Raporu
 
-**Proje:** Telemetry API
+**Proje:** Oyun Telemetri API Servisi  
 **Tarih:** 24 Temmuz 2026
 
-### Bu Hafta Tamamlananlar
+## Bu Hafta Tamamlananlar
 
-- Proje klasör yapısı (`app/`, `tests/` ve `reports/`) ve sanal ortam (virtual environment) başarıyla kuruldu.
-- GameAnalytics standartlarına uygun 10 farklı olay (event) kategorisi için Pydantic şemaları (`schemas.py`) tasarlandı.
-- FastAPI iskeleti kurularak `GET /health` (nabız yoklaması) ve `POST /events` (veri alımı) uç noktaları oluşturuldu.
-- Beklentilerin bir adım ötesine geçilerek, verilerin sadece bellekte (in-memory) tutulması yerine kalıcı bir SQLite veritabanı entegrasyonu (`database.py`, `models.py`) sağlandı.
-- Swagger UI ve manuel Python scriptleri (requests) üzerinden API uç noktalarının başarılı bir şekilde çalıştığı ve veritabanına kayıt yaptığı test edildi.
+- Proje klasör yapısı, Git deposu ve sanal ortam oluşturuldu. Projenin gerekli paketleri `requirements.txt` dosyasına kaydedildi.
+- FastAPI uygulaması kuruldu ve servisin çalışıp çalışmadığını kontrol eden `GET /health` uç noktası geliştirildi.
+- Oyunlardan gelen telemetri olaylarını kabul eden `POST /events` uç noktası oluşturuldu. Geçerli olaylar `201 Created` durum koduyla kabul edilmektedir.
+- GameAnalytics yapısı temel alınarak 10 farklı olay kategorisi için Pydantic şemaları tasarlandı: `business`, `progression`, `design`, `resource`, `error`, `user`, `session_end`, `ad`, `impression` ve `info`.
+- Verilerin bellekte tutulması yerine SQLAlchemy ORM ve SQLite kullanılarak kalıcı veritabanı yapısı kuruldu.
+- Bütün olayları listeleyen `GET /events` ve belirli bir kullanıcıya ait olayları getiren `GET /events/user/{user_id}` uç noktaları geliştirildi.
+- Listeleme uç noktalarına `skip` ve `limit` parametreleriyle sayfalama eklendi. Geçersiz değerlerin gönderilmesini önlemek için alt ve üst sınırlar tanımlandı.
+- API cevapları Pydantic response modelleri ile standartlaştırıldı ve Swagger arayüzünde cevap yapılarının görüntülenmesi sağlandı.
+- Swagger UI üzerinden başarılı ve hatalı istek senaryoları manuel olarak test edildi.
 
-### Karşılaşılan Zorluklar ve Çözümler
+## Karşılaşılan Zorluklar ve Çözümler
 
-- **Zorluk:** `POST /events` testleri sırasında Swagger arayüzünün otomatik şablonunda, olay gövdesi (`event_data`) için varsayılan olarak parasal verilerin (BusinessData) çıkması kafa karışıklığı yarattı.
-- **Çözüm:** Bunun Pydantic `Union` yapısının varsayılan listeleme davranışı olduğu anlaşıldı. Gerçekçi bir `ProgressionData` senaryosu (Seviye 5'i geçme) JSON olarak manuel girildiğinde, API'nin doğru modeli kendi kendine seçtiği ve veri kaybı olmadan veritabanına kaydettiği doğrulandı.
-- **Zorluk:** İlk geliştirme aşamasında `main.py` içerisindeki veri kayıt fonksiyonunda kod tekrarları ve format hataları tespit edildi.
-- **Çözüm:** Kod temizlenerek gereksiz tekrarlar giderildi ve başarılı işlem sonrası HTTP 200 durum kodu ile standart JSON yanıtı dönülmesi sağlandı.
+### Kategori ve olay verisi uyumsuzluğu
 
-### Alınan Teknik Kararlar ve Gerekçeleri
+**Zorluk:** `event_data` alanında kullanılan `Union`, verinin tanımlanan modellerden birine uyduğunu kontrol ediyor fakat olay kategorisiyle uyumunu garanti etmiyordu. Örneğin `business` kategorisi altında reklam verisi kabul edilebiliyordu.
 
-- **FastAPI Kullanımı:** Hızlı prototipleme imkanı sunması ve OpenAPI (Swagger) dokümantasyonunu otomatik üretmesi nedeniyle tercih edildi.
-- **Pydantic Şemaları:** Dışarıdan (oyun motorundan) gelecek verilerin API'yi bozmaması ve katı doğrulama (validation) kurallarından geçmesi için uygulandı. `Union` veri tipi kullanılarak farklı olay türlerinin tek bir uç noktadan güvenle alınması sağlandı.
-- **SQLite Tercihi:** İlk haftanın gereksinimi bellekte tutmak olsa da, projeyi gerçek dünya senaryolarına daha uygun hale getirmek ve kalıcı veri takibini şimdiden kurgulamak için yerel bir veritabanı dosyası kullanıldı.
+**Çözüm:** `model_validator` kullanılarak her kategorinin yalnızca kendisine ait `event_data` modeliyle eşleşmesi sağlandı.
 
-### Gelecek Hafta Planı
+### Eksik SQLAlchemy bağımlılığı
 
-- Uç noktaların kararlılığını kanıtlamak için `tests/` klasörü içerisine otomatik birim testlerinin (unit tests) yazılması.
-- Toplanan telemetri verilerini filtrelemek veya analiz etmek için yeni GET uç noktalarının (örneğin, belirli bir kullanıcının geçmiş olaylarını listeleme) API'ye eklenmesi.
+**Zorluk:** SQLAlchemy projede kullanıldığı hâlde başlangıçta bağımlılık dosyasında bulunmuyordu.
+
+**Çözüm:** SQLAlchemy sürümü `requirements.txt` dosyasına eklenerek projenin başka bir ortamda yeniden kurulabilir olması sağlandı.
+
+### Veritabanı alanlarının boş bırakılabilmesi
+
+**Zorluk:** SQLAlchemy modelinde bazı zorunlu alanlar veritabanı seviyesinde boş bırakılabiliyordu.
+
+**Çözüm:** Zorunlu kolonlara `nullable=False` eklenerek veri bütünlüğü güçlendirildi.
+
+## Alınan Teknik Kararlar ve Gerekçeleri
+
+- **FastAPI:** Pydantic entegrasyonu, otomatik Swagger/OpenAPI dokümantasyonu ve hızlı API geliştirme imkânı nedeniyle tercih edildi.
+- **Pydantic:** Gelen JSON verilerinin tiplerini, zorunlu alanlarını ve kategoriye özel kurallarını doğrulamak için kullanıldı.
+- **SQLAlchemy ve SQLite:** İlk geliştirme aşamasında kolay kurulum ve kalıcı veri saklama sağladığı için kullanıldı.
+- **Senkron yapı:** Mevcut SQLite bağlantısı ve SQLAlchemy Session yapısı senkron olduğu için endpointler normal `def` ile geliştirildi.
+- **UTC zaman kullanımı:** Farklı cihazlardan gelen olay zamanlarını ortak bir standartta tutmak için UTC tercih edildi.
+- **Sayfalama:** Veri miktarı arttığında bütün kayıtların tek istekte getirilmesini önlemek için `skip` ve `limit` kullanıldı.
+- **Response modelleri:** API cevaplarının standartlaştırılması, doğrulanması ve Swagger dokümantasyonunda açık şekilde gösterilmesi için Pydantic response modelleri oluşturuldu.
+
+## Gelecek Hafta Planı
+
+- Yazma işlemlerini korumak için API key tabanlı temel kimlik doğrulama eklenmesi.
+- Hata cevaplarının daha standart bir yapıya dönüştürülmesi.
+- Veritabanı şemasının ve API kullanım örneklerinin dokümante edilmesi.
+- README dosyasının güncel klasör yapısı ve uç noktalarla uyumlu hâle getirilmesi.
+- İkinci hafta kapsamındaki veritabanı ve doğrulama çalışmalarının geliştirilmesi.
