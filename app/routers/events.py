@@ -2,27 +2,36 @@ from fastapi import APIRouter, Depends, Path, Query, status
 from sqlalchemy.orm import Session
 from app import models, schemas
 from app.database import get_db
+from app.security import require_api_key
 
-#tüm rotaların başına /events ekleyen kod
-router = APIRouter(
-    prefix="/events",
-    tags=["Events"]
+# tüm rotaların başına /events ekleyen kod
+router = APIRouter(prefix="/events", tags=["Events"])
+
+
+# prefix kullandığımız için /events yazmak yerine / yazabiliyoruz.
+@router.post(
+    "/",
+    status_code=status.HTTP_201_CREATED,
+    response_model=schemas.EventCreateResponse,
+    dependencies=[Depends(require_api_key)],
 )
-
-#prefix kullandığımız için /events yazmak yerine / yazabiliyoruz.
-@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.EventCreateResponse,)
 def create_event(event: schemas.GameEvent, db: Session = Depends(get_db)):
-    db_event = models.GameEvent(**event.model_dump()) 
+    db_event = models.GameEvent(**event.model_dump())
     db.add(db_event)
     db.commit()
     db.refresh(db_event)
     return {
         "status": "success",
         "message": "Event successfully saved to database.",
-        "data": db_event
+        "data": db_event,
     }
 
-@router.get("/", status_code=status.HTTP_200_OK, response_model=schemas.EventListResponse,)
+
+@router.get(
+    "/",
+    status_code=status.HTTP_200_OK,
+    response_model=schemas.EventListResponse,
+)
 def get_events(
     skip: int = Query(
         default=0,
@@ -53,11 +62,15 @@ def get_events(
         "count": len(events),
         "skip": skip,
         "limit": limit,
-        "data": events
+        "data": events,
     }
 
 
-@router.get("/user/{user_id}", status_code=status.HTTP_200_OK, response_model=schemas.UserEventListResponse,)
+@router.get(
+    "/user/{user_id}",
+    status_code=status.HTTP_200_OK,
+    response_model=schemas.UserEventListResponse,
+)
 def get_events_by_user(
     user_id: str = Path(
         ...,
@@ -77,13 +90,14 @@ def get_events_by_user(
     ),
     db: Session = Depends(get_db),
 ):
-    user_events_query = db.query(models.GameEvent).filter(models.GameEvent.user_id == user_id)
+    user_events_query = db.query(models.GameEvent).filter(
+        models.GameEvent.user_id == user_id
+    )
 
     total = user_events_query.count()
 
     events = (
-        user_events_query
-        .order_by(models.GameEvent.id.desc())
+        user_events_query.order_by(models.GameEvent.id.desc())
         .offset(skip)
         .limit(limit)
         .all()
@@ -96,5 +110,5 @@ def get_events_by_user(
         "count": len(events),
         "skip": skip,
         "limit": limit,
-        "data": events
+        "data": events,
     }

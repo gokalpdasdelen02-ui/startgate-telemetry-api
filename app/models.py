@@ -32,7 +32,7 @@ class GameEvent(Base):
     timestamp = Column(
         DateTime(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc)
+        default=lambda: datetime.now(timezone.utc),
     )
 
     session_id = Column(
@@ -81,5 +81,3 @@ class GameEvent(Base):
         String,
         nullable=False,
     )
-
-
