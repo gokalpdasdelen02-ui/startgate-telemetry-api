@@ -10,9 +10,9 @@ router = APIRouter(
 )
 
 #prefix kullandığımız için /events yazmak yerine / yazabiliyoruz.
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.EventCreateResponse,)
 def create_event(event: schemas.GameEvent, db: Session = Depends(get_db)):
-    db_event = models.GameEvent(**event.model_dump()) #kullandığın veri doğrulama kütüphanesi olan Pydantic'in yeni versiyonunda dict() metodunun kullanımdan kaldırılmış olmasıdır.
+    db_event = models.GameEvent(**event.model_dump()) 
     db.add(db_event)
     db.commit()
     db.refresh(db_event)
@@ -22,7 +22,7 @@ def create_event(event: schemas.GameEvent, db: Session = Depends(get_db)):
         "data": db_event
     }
 
-@router.get("/", status_code=status.HTTP_200_OK)
+@router.get("/", status_code=status.HTTP_200_OK, response_model=schemas.EventListResponse,)
 def get_events(
     skip: int = Query(
         default=0,
@@ -41,12 +41,13 @@ def get_events(
 
     events = (
         db.query(models.GameEvent)
+        .order_by(models.GameEvent.id.desc())
         .offset(skip)
         .limit(limit)
         .all()
     )
 
-    return{
+    return {
         "status": "success",
         "total": total,
         "count": len(events),
@@ -56,7 +57,7 @@ def get_events(
     }
 
 
-@router.get("/user/{user_id}", status_code=status.HTTP_200_OK)
+@router.get("/user/{user_id}", status_code=status.HTTP_200_OK, response_model=schemas.UserEventListResponse,)
 def get_events_by_user(
     user_id: str = Path(
         ...,

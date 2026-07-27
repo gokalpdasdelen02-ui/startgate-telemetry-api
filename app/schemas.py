@@ -1,13 +1,13 @@
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from typing import Optional, Union, Literal
 from datetime import datetime, timezone
 
-# --- ORTAK YAPILANDIRMA ---
+# ORTAK YAPILANDIRMA
 class BaseEventData(BaseModel):
     #şemada tanımlanmayan verilerin gelmesini yasaklar 
     model_config = {"extra": "forbid"}
 
-# --- ALT ŞEMALAR (EVENT DATA) ---
+# ALT ŞEMALAR 
 
 class BusinessData(BaseEventData):
     currency: str = Field(..., min_length=3, max_length=3, description="Para birimi (örn: USD, TRY)")
@@ -67,7 +67,7 @@ class ImpressionData(BaseEventData):
 class InfoData(BaseEventData):
     message: str = Field(..., description="Gönderilecek log veya bilgi mesajı")
 
-# --- ANA ŞEMA (GAME EVENT) ---
+# ANA ŞEMA (GAME EVENT)
 
 class GameEvent(BaseModel):
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), description="Etkinlik Zamanı")
@@ -86,6 +86,7 @@ class GameEvent(BaseModel):
     v: str = Field(..., description="Oyun/Uygulama versiyonu")
     
     # Tüm alt şemaları Union ile birleştiriyoruz
+
     event_data: Union[BusinessData, ProgressionData, DesignData, ResourceData, ErrorData, UserData, SessionEndData, AdData, ImpressionData, InfoData] = Field(
         ..., description="Kategoriye özel detaylı veriler"
     
@@ -115,3 +116,31 @@ class GameEvent(BaseModel):
             )
         
         return self
+    
+# CEVAP ŞEMASI
+class EventResponse(GameEvent):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+
+class EventCreateResponse(BaseModel):
+    status: Literal["success"]
+    message: str
+    data: EventResponse
+
+class EventListResponse(BaseModel):
+    status: Literal["success"]
+    total: int = Field(..., ge=0)
+    count: int = Field(..., ge=0)
+    skip: int = Field(..., ge=0)
+    limit: int = Field(..., ge=1, le=100)
+    data: list[EventResponse]
+
+class UserEventListResponse(BaseModel):
+    status: Literal["success"]
+    user_id: str
+    total: int = Field(..., ge=0)
+    count: int = Field(..., ge=0)
+    skip: int = Field(..., ge=0)
+    limit: int = Field(..., ge=1, le=100)
+    data: list[EventResponse]
