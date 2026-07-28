@@ -6,3 +6,4 @@ telemetry.db.backup
 .env
 .env.*
 !.env.example
+.DS_Store
