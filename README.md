@@ -18,6 +18,10 @@ API’ye gönderilen veriler Pydantic şemalarıyla doğrulanır. Geçerli olayl
 - Pydantic response modelleriyle standart API cevapları
 - Otomatik Swagger/OpenAPI dokümantasyonu
 - UTC tabanlı olay zamanı oluşturma
+- API key ile yazma işlemlerinin korunması
+- `.env` dosyasıyla gizli yapılandırma yönetimi
+- Veritabanı hatalarında transaction rollback işlemi
+- Katı alan doğrulaması ve fazla alanların reddedilmesi
 
 ## Kullanılan Teknolojiler
 
@@ -29,6 +33,7 @@ API’ye gönderilen veriler Pydantic şemalarıyla doğrulanır. Geçerli olayl
 - **Veritabanı:** SQLite
 - **Kod biçimlendirme:** Black
 - **Versiyon kontrolü:** Git ve GitHub
+- **Ortam değişkenleri:** python-dotenv
 
 ## Proje Mimarisi
 
@@ -53,7 +58,8 @@ startgate-telemetry-api/
 ├── reports/
 │   └── hafta-1.md
 │
-├── .env.example            # Ortam değişkenleri için örnek dosya
+├── .env.example             # Ortam değişkenleri için örnek dosya
+├── api-tasarimi.md
 ├── requirements.txt
 ├── telemetry.db
 └── README.md
@@ -66,6 +72,9 @@ startgate-telemetry-api/
 - `models.py`: Veritabanındaki `game_events` tablosunu temsil eder.
 - `schemas.py`: API’ye gelen verileri ve API’den dönen cevapları doğrular.
 - `routers/events.py`: `/events` ile başlayan API endpointlerini içerir.
+- `security.py`: API anahtarının alınmasını ve doğrulanmasını yönetir.
+- `docs/veritabani-semasi.md`: Veritabanı kolonlarını ve tasarım kararlarını açıklar.
+- `api-tasarimi.md`: Endpointleri, veri şemalarını ve doğrulama kurallarını belgeler.
 
 ## Kurulum
 
@@ -331,100 +340,6 @@ Beklenen cevap:
 }
 ```
 
-## Sağlık Kontrolü
-
-### İstek
-
-```http
-GET /health
-```
-
-### Örnek cevap
-
-```json
-{
-  "status": "healthy"
-}
-```
-
-## Yeni Olay Oluşturma
-
-### İstek
-
-```http
-POST /events/
-```
-
-### Örnek business olayı
-
-```json
-{
-  "category": "business",
-  "platform": "Web",
-  "os_version": "macOS 15",
-  "device": "MacBook Air",
-  "client_ts": 1753354000,
-  "user_id": "user-1001",
-  "session_id": "session-1001",
-  "session_num": 1,
-  "sdk_version": "1.0.0",
-  "manufacturer": "Apple",
-  "v": "1.0.0",
-  "event_data": {
-    "currency": "TRY",
-    "amount": 3500,
-    "cart_type": "shop"
-  }
-}
-```
-
-`timestamp` alanı gönderilmezse sunucu tarafından otomatik olarak UTC biçiminde oluşturulur.
-
-### Başarılı cevap
-
-Başarılı bir kayıt işleminde API:
-
-```text
-201 Created
-```
-
-durum kodunu döndürür.
-
-```json
-{
-  "status": "success",
-  "message": "Event successfully saved to database.",
-  "data": {
-    "id": 1,
-    "timestamp": "2026-07-24T12:10:56.258555",
-    "category": "business",
-    "platform": "Web",
-    "os_version": "macOS 15",
-    "device": "MacBook Air",
-    "client_ts": 1753354000,
-    "user_id": "user-1001",
-    "session_id": "session-1001",
-    "session_num": 1,
-    "sdk_version": "1.0.0",
-    "manufacturer": "Apple",
-    "v": "1.0.0",
-    "event_data": {
-      "currency": "TRY",
-      "amount": 3500,
-      "cart_type": "shop"
-    }
-  }
-}
-```
-
-## Olayları Listeleme
-
-### İstek
-
-```http
-GET /events/?skip=0&limit=10
-```
-
 ### Sayfalama parametreleri
 
 - `skip`: Başlangıçtan itibaren atlanacak kayıt sayısıdır. En az `0` olabilir.
@@ -446,42 +361,6 @@ GET /events/?skip=0&limit=10
 ```
 
 Olaylar en yeni kayıt önce gelecek şekilde sıralanır.
-
-## Kullanıcıya Göre Olayları Listeleme
-
-### İstek
-
-```http
-GET /events/user/user-1001?skip=0&limit=10
-```
-
-### Örnek cevap
-
-```json
-{
-  "status": "success",
-  "user_id": "user-1001",
-  "total": 3,
-  "count": 3,
-  "skip": 0,
-  "limit": 10,
-  "data": []
-}
-```
-
-Belirtilen kullanıcı kimliğine ait olay bulunmazsa istek yine başarılı kabul edilir ve boş liste döndürülür:
-
-```json
-{
-  "status": "success",
-  "user_id": "unknown-user",
-  "total": 0,
-  "count": 0,
-  "skip": 0,
-  "limit": 10,
-  "data": []
-}
-```
 
 ## Desteklenen Olay Kategorileri
 
@@ -508,11 +387,16 @@ API aşağıdaki doğrulamaları uygular:
 
 - Zorunlu alanların bulunması
 - Alanların doğru veri tipine sahip olması
-- Şemada bulunmayan fazla alanların reddedilmesi
+- Ana JSON seviyesindeki fazla alanların reddedilmesi
+- `event_data` içindeki fazla alanların reddedilmesi
+- `category` ile `event_data` modelinin eşleşmesi
+- Temel metin alanlarının boş olmaması
+- Yalnızca boşluklardan oluşan metinlerin reddedilmesi
+- Metinlerin başındaki ve sonundaki gereksiz boşlukların temizlenmesi
 - `session_num` ve miktar alanlarının sıfırdan büyük olması
-- Para biriminin üç büyük harften oluşması
+- `client_ts` değerinin negatif olmaması
+- Para biriminin üç büyük ve alfabetik harften oluşması
 - `Literal` ile sınırlandırılmış değerlerin kontrolü
-- `category` ve `event_data` modelinin birbiriyle eşleşmesi
 - `skip` ve `limit` parametrelerinin izin verilen aralıkta olması
 
 Doğrulama hatalarında API:
@@ -553,12 +437,16 @@ Tamamlanan temel özellikler:
 - Kullanıcıya göre olay sorgulama
 - Sayfalama
 - Kategori ve olay verisi eşleşme kontrolü
+- Katı alan doğrulaması
 - Response modelleri
-- Swagger üzerinden manuel testler
+- API key tabanlı yazma koruması
+- `.env` üzerinden gizli yapılandırma yönetimi
+- Veritabanı hatalarında rollback işlemi
+- Veritabanı şema dokümanı
+- Swagger ve cURL üzerinden manuel testler
 
 ## Planlanan Geliştirmeler
 
-- API key tabanlı kimlik doğrulama
 - pytest ile otomatik API testleri
 - Tarih ve olay kategorisine göre filtreleme
 - Toplu olay kaydetme
