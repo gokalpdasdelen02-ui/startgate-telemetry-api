@@ -1,16 +1,23 @@
 import os
 import secrets
+from pathlib import Path
 from typing import Annotated
 
+from dotenv import load_dotenv
 from fastapi import Depends, HTTPException, status
 from fastapi.security import APIKeyHeader
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+ENV_FILE = BASE_DIR / ".env"
+
+load_dotenv(dotenv_path=ENV_FILE)
 
 API_KEY_HEADER_NAME = "X-API-Key"
 
 api_key_header = APIKeyHeader(
     name=API_KEY_HEADER_NAME,
     scheme_name="Telemetry API Key",
-    description="Olay oluşturma işlemlerinde gerekli API anahtarı",
+    description="Olay oluşturma işlemlerinde gerekli API anahtarı.",
     auto_error=False,
 )
 

@@ -41,16 +41,21 @@ startgate-telemetry-api/
 │   ├── database.py         # Veritabanı bağlantısı ve session yönetimi
 │   ├── models.py           # SQLAlchemy veritabanı modeli
 │   ├── schemas.py          # Pydantic giriş ve cevap şemaları
+│   ├── security.py         # API key doğrulaması
 │   │
 │   └── routers/
 │       ├── __init__.py
 │       └── events.py       # Olay kaydetme ve sorgulama endpointleri
 │
-├── reports/
-│   └── hafta-1.md          # Birinci hafta staj durum raporu
+├── docs/
+│   └── veritabani-semasi.md
 │
-├── requirements.txt        # Python bağımlılıkları
-├── telemetry.db            # Yerel SQLite veritabanı
+├── reports/
+│   └── hafta-1.md
+│
+├── .env.example            # Ortam değişkenleri için örnek dosya
+├── requirements.txt
+├── telemetry.db
 └── README.md
 ```
 
@@ -99,7 +104,33 @@ macOS ortamında `python` komutu bulunamazsa:
 python3 -m pip install -r requirements.txt
 ```
 
-### 4. Uygulamayı çalıştırın
+### 4. Ortam değişkenlerini yapılandırın
+
+API’ye olay kaydetme işlemleri bir API anahtarıyla korunmaktadır.
+
+Örnek ortam dosyasını kopyalayın:
+
+macOS veya Linux:
+
+```bash
+cp .env.example .env
+```
+
+Windows:
+
+```powershell
+copy .env.example .env
+```
+
+Oluşan `.env` dosyasını açın ve kendi geliştirme anahtarınızı belirleyin:
+
+```env
+TELEMETRY_API_KEY=your-development-api-key
+```
+
+`.env` dosyası gizli bilgiler içerdiği için Git tarafından takip edilmez ve GitHub’a gönderilmez.
+
+### 5. Uygulamayı çalıştırın
 
 ```bash
 python -m uvicorn app.main:app --reload
@@ -129,6 +160,10 @@ http://127.0.0.1:8000/docs
 
 Swagger üzerinden endpointler incelenebilir, örnek istekler gönderilebilir ve başarılı veya hatalı cevaplar görüntülenebilir.
 
+`POST /events/` endpointini Swagger üzerinden test etmek için sayfanın üst kısmındaki **Authorize** düğmesine basın ve `.env` dosyanızda belirlediğiniz API anahtarını girin.
+
+Anahtarın başına `Bearer` eklemeyin. Yalnızca anahtar değerini yazın.
+
 ## API Endpointleri
 
 | Metot  | Endpoint                 | Açıklama                                                     |
@@ -137,6 +172,164 @@ Swagger üzerinden endpointler incelenebilir, örnek istekler gönderilebilir ve
 | `POST` | `/events/`               | Yeni bir telemetri olayı doğrular ve kaydeder                |
 | `GET`  | `/events/`               | Bütün olayları sayfalı şekilde listeler                      |
 | `GET`  | `/events/user/{user_id}` | Belirtilen kullanıcıya ait olayları sayfalı şekilde listeler |
+
+## API Key Doğrulaması
+
+Yeni bir olay oluşturmak için `POST /events/` isteğinde geçerli bir API anahtarı gönderilmelidir.
+
+API anahtarı şu HTTP headerı içinde gönderilir:
+
+```http
+X-API-Key: your-development-api-key
+```
+
+API anahtarı JSON istek gövdesinin bir parçası değildir.
+
+Endpointlerin erişim durumu:
+
+| Endpoint                     | API key gerekli mi? |
+| ---------------------------- | ------------------: |
+| `GET /health`                |               Hayır |
+| `POST /events/`              |                Evet |
+| `GET /events/`               |               Hayır |
+| `GET /events/user/{user_id}` |               Hayır |
+
+Eksik veya geçersiz API anahtarında servis:
+
+```text
+401 Unauthorized
+```
+
+durum kodunu döndürür.
+
+```json
+{
+  "detail": "Invalid or missing API key."
+}
+```
+
+Sunucuda `TELEMETRY_API_KEY` ortam değişkeni yapılandırılmamışsa:
+
+```text
+500 Internal Server Error
+```
+
+durum kodu döndürülür.
+
+## cURL ile API Kullanımı
+
+Aşağıdaki örneklerde:
+
+```text
+your-development-api-key
+```
+
+ifadesini `.env` dosyanızda belirlediğiniz API anahtarıyla değiştirin.
+
+### Sağlık kontrolü
+
+```bash
+curl -X GET "http://127.0.0.1:8000/health"
+```
+
+Beklenen cevap:
+
+```json
+{
+  "status": "ok",
+  "message": "Service is healthy."
+}
+```
+
+### Yeni telemetri olayı oluşturma
+
+```bash
+curl -X POST "http://127.0.0.1:8000/events/" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-development-api-key" \
+  -d '{
+    "category": "business",
+    "platform": "Web",
+    "os_version": "macOS 15",
+    "device": "MacBook Air",
+    "client_ts": 1753354000,
+    "user_id": "user-1001",
+    "session_id": "session-1001",
+    "session_num": 1,
+    "sdk_version": "1.0.0",
+    "manufacturer": "Apple",
+    "v": "1.0.0",
+    "event_data": {
+      "currency": "TRY",
+      "amount": 3500,
+      "cart_type": "shop"
+    }
+  }'
+```
+
+Başarılı işlemde:
+
+```text
+201 Created
+```
+
+durum kodu döndürülür.
+
+`timestamp` alanı gönderilmezse sunucu tarafından otomatik olarak UTC zamanıyla oluşturulur.
+
+### Bütün olayları listeleme
+
+```bash
+curl -X GET "http://127.0.0.1:8000/events/?skip=0&limit=10"
+```
+
+Bu endpoint API anahtarı gerektirmez.
+
+### Kullanıcıya ait olayları listeleme
+
+```bash
+curl -X GET \
+  "http://127.0.0.1:8000/events/user/user-1001?skip=0&limit=10"
+```
+
+Belirtilen kullanıcıya ait kayıt bulunmazsa servis `200 OK` ve boş bir `data` listesi döndürür.
+
+### API anahtarı olmadan POST denemesi
+
+```bash
+curl -X POST "http://127.0.0.1:8000/events/" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "category": "business",
+    "platform": "Web",
+    "os_version": "macOS 15",
+    "device": "MacBook Air",
+    "client_ts": 1753354000,
+    "user_id": "user-1001",
+    "session_id": "session-1001",
+    "session_num": 1,
+    "sdk_version": "1.0.0",
+    "manufacturer": "Apple",
+    "v": "1.0.0",
+    "event_data": {
+      "currency": "TRY",
+      "amount": 3500,
+      "cart_type": "shop"
+    }
+  }'
+```
+
+Beklenen cevap:
+
+```text
+401 Unauthorized
+```
+
+```json
+{
+  "detail": "Invalid or missing API key."
+}
+```
 
 ## Sağlık Kontrolü
 

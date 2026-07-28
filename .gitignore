@@ -3,3 +3,6 @@ __pycache__/
 *.db
 telemetry.db
 telemetry.db.backup
+.env
+.env.*
+!.env.example

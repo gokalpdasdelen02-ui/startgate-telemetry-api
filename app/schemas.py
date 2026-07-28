@@ -1,6 +1,6 @@
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-from typing import Optional, Union, Literal
 from datetime import datetime, timezone
+from typing import Optional, Union, Literal
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 # ORTAK YAPILANDIRMA
@@ -116,6 +116,32 @@ class InfoData(BaseEventData):
 
 
 class GameEvent(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
+            "examples": [
+                {
+                    "category": "business",
+                    "platform": "Web",
+                    "os_version": "macOS 15",
+                    "device": "MacBook Air",
+                    "client_ts": 1753354000,
+                    "user_id": "user-1001",
+                    "session_id": "session-1001",
+                    "session_num": 1,
+                    "sdk_version": "1.0.0",
+                    "manufacturer": "Apple",
+                    "v": "1.0.0",
+                    "event_data": {
+                        "currency": "TRY",
+                        "amount": 3500,
+                        "cart_type": "shop",
+                    },
+                }
+            ]
+        },
+    )
+
     timestamp: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         description="Etkinlik Zamanı",
@@ -133,21 +159,21 @@ class GameEvent(BaseModel):
         "info",
     ] = Field(..., description="Etkinlik kategorisi")
     platform: str = Field(
-        ..., description="Kullanıcı platformu (örn: iOS, Android, Web)"
+        ..., min_length=1, description="Kullanıcı platformu (örn: iOS, Android, Web)"
     )
-    os_version: str = Field(..., description="İşletim sistemi sürümü")
-    device: str = Field(..., description="Cihaz modeli")
-    client_ts: int = Field(..., description="İstemci tarafındaki Unix timestamp")
-    user_id: str = Field(..., description="Benzersiz kullanıcı kimliği")
-    session_id: str = Field(..., description="Oturum kimliği")
+    os_version: str = Field(..., min_length=1, description="İşletim sistemi sürümü")
+    device: str = Field(..., min_length=1, description="Cihaz modeli")
+    client_ts: int = Field(..., ge=0, description="İstemci tarafındaki Unix timestamp")
+    user_id: str = Field(..., min_length=1, description="Benzersiz kullanıcı kimliği")
+    session_id: str = Field(..., min_length=1, description="Oturum kimliği")
     session_num: int = Field(
         ...,
         gt=0,
         description="Kullanıcının toplam oturum sayısı (0'dan büyük olmalıdır)",
     )
-    sdk_version: str = Field(..., description="Kullanılan SDK sürümü")
-    manufacturer: str = Field(..., description="Cihaz üreticisi")
-    v: str = Field(..., description="Oyun/Uygulama versiyonu")
+    sdk_version: str = Field(..., min_length=1, description="Kullanılan SDK sürümü")
+    manufacturer: str = Field(..., min_length=1, description="Cihaz üreticisi")
+    v: str = Field(..., min_length=1, description="Oyun/Uygulama versiyonu")
 
     # Tüm alt şemaları Union ile birleştiriyoruz
 
@@ -163,6 +189,25 @@ class GameEvent(BaseModel):
         ImpressionData,
         InfoData,
     ] = Field(..., description="Kategoriye özel detaylı veriler")
+
+    @field_validator(
+        "platform",
+        "os_version",
+        "device",
+        "user_id",
+        "session_id",
+        "sdk_version",
+        "manufacturer",
+        "v",
+    )
+    @classmethod
+    def text_fields_must_not_be_blank(cls, value: str) -> str:
+        stripped_value = value.strip()
+
+        if not stripped_value:
+            raise ValueError("Bu alan boş bırakılamaz.")
+
+        return stripped_value
 
     @model_validator(mode="after")
     def validate_event_data_matches_category(self):

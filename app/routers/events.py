@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, Path, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from app import models, schemas
 from app.database import get_db
@@ -17,9 +18,20 @@ router = APIRouter(prefix="/events", tags=["Events"])
 )
 def create_event(event: schemas.GameEvent, db: Session = Depends(get_db)):
     db_event = models.GameEvent(**event.model_dump())
-    db.add(db_event)
-    db.commit()
-    db.refresh(db_event)
+
+    try:
+        db.add(db_event)
+        db.commit()
+        db.refresh(db_event)
+
+    except SQLAlchemyError as exc:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Event could not be saved to database.",
+        ) from exc
+
     return {
         "status": "success",
         "message": "Event successfully saved to database.",
