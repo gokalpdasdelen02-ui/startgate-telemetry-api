@@ -8,6 +8,20 @@ class BaseEventData(BaseModel):
     # şemada tanımlanmayan verilerin gelmesini yasaklar
     model_config = {"extra": "forbid"}
 
+    # alt şemalar için değerler
+    @field_validator("*", mode="before", check_fields=False)
+    @classmethod
+    def text_fields_must_not_be_blank(cls, value):
+        if isinstance(value, str):
+            stripped_value = value.strip()
+
+            if not stripped_value:
+                raise ValueError("Metin alanları boş bırakılamaz.")
+
+            return stripped_value
+
+        return value
+
 
 # ALT ŞEMALAR
 
@@ -18,7 +32,9 @@ class BusinessData(BaseEventData):
     )
     amount: int = Field(..., gt=0, description="Miktar (kuruş/cent cinsinden)")
     cart_type: Optional[str] = Field(
-        None, description="Satın alımın yapıldığı yer (örn: shop, end_of_level)"
+        None,
+        min_length=1,
+        description="Satın alımın yapıldığı yer (örn: shop, end_of_level)",
     )
 
     # para biriminin sadece büyük harf olmasını sağlıyoruz.
@@ -36,17 +52,23 @@ class ProgressionData(BaseEventData):
     status: Literal["Start", "Complete", "Fail"] = Field(
         ..., description="Bölüm/Görev durumu"
     )
-    progression_01: str = Field(..., description="Ana bölüm adı (örn: level_01)")
-    progression_02: Optional[str] = Field(
-        None, description="Alt bölüm adı (örn: phase_1)"
+    progression_01: str = Field(
+        ..., min_length=1, description="Ana bölüm adı (örn: level_01)"
     )
-    progression_03: Optional[str] = Field(None, description="Daha alt bölüm detayları")
+    progression_02: Optional[str] = Field(
+        None, min_length=1, description="Alt bölüm adı (örn: phase_1)"
+    )
+    progression_03: Optional[str] = Field(
+        None, min_length=1, description="Daha alt bölüm detayları"
+    )
     score: Optional[int] = Field(None, description="Bölüm sonu skoru")
 
 
 class DesignData(BaseEventData):
     event_id: str = Field(
-        ..., description="Tasarım olayının adı (örn: kill:boss, ui:click:play)"
+        ...,
+        min_length=1,
+        description="Tasarım olayının adı (örn: kill:boss, ui:click:play)",
     )
     value: Optional[float] = Field(
         None, description="Olayla ilgili sayısal bir değer (örn: geçen süre, hasar)"
@@ -57,11 +79,15 @@ class ResourceData(BaseEventData):
     flow_type: Literal["Sink", "Source"] = Field(
         ..., description="Kaynak akış yönü (Sink: Harcama, Source: Kazanma)"
     )
-    currency: str = Field(..., description="Kaynak türü (örn: Gems, Gold)")
-    item_type: str = Field(
-        ..., description="Öğenin kategorisi (örn: Weapons, Boosters)"
+    currency: str = Field(
+        ..., min_length=1, description="Kaynak türü (örn: Gems, Gold)"
     )
-    item_id: str = Field(..., description="Spesifik öğe (örn: Sword_01, Health_Potion)")
+    item_type: str = Field(
+        ..., min_length=1, description="Öğenin kategorisi (örn: Weapons, Boosters)"
+    )
+    item_id: str = Field(
+        ..., min_length=1, description="Spesifik öğe (örn: Sword_01, Health_Potion)"
+    )
     amount: float = Field(
         ..., gt=0, description="Kazanılan veya harcanan miktar 0'dan büyük olmalıdır."
     )
@@ -71,11 +97,13 @@ class ErrorData(BaseEventData):
     severity: Literal["debug", "info", "warning", "error", "critical"] = Field(
         ..., description="Hata seviyesi"
     )
-    message: str = Field(..., description="Hata mesajı veya stack trace")
+    message: str = Field(..., min_length=1, description="Hata mesajı veya stack trace")
 
 
 class UserData(BaseEventData):
-    custom_01: Optional[str] = Field(None, description="Opsiyonel kullanıcı verisi")
+    custom_01: Optional[str] = Field(
+        None, min_length=1, description="Opsiyonel kullanıcı verisi"
+    )
 
 
 class SessionEndData(BaseEventData):
@@ -94,22 +122,26 @@ class AdData(BaseEventData):
         "video", "rewarded_video", "playable", "interstitial", "banner"
     ] = Field(..., description="Reklamın formatı")
     ad_sdk_name: str = Field(
-        ..., description="Reklam ağının adı (örn: admob, unityads)"
+        ..., min_length=1, description="Reklam ağının adı (örn: admob, unityads)"
     )
     ad_placement: str = Field(
-        ..., description="Reklamın çıktığı yer (örn: end_of_level)"
+        ..., min_length=1, description="Reklamın çıktığı yer (örn: end_of_level)"
     )
 
 
 class ImpressionData(BaseEventData):
     ad_network_name: str = Field(
-        ..., description="Gösterim yapan reklam ağı (örn: ironSource)"
+        ..., min_length=1, description="Gösterim yapan reklam ağı (örn: ironSource)"
     )
-    ad_network_version: str = Field(..., description="Reklam ağının SDK versiyonu")
+    ad_network_version: str = Field(
+        ..., min_length=1, description="Reklam ağının SDK versiyonu"
+    )
 
 
 class InfoData(BaseEventData):
-    message: str = Field(..., description="Gönderilecek log veya bilgi mesajı")
+    message: str = Field(
+        ..., min_length=1, description="Gönderilecek log veya bilgi mesajı"
+    )
 
 
 # ANA ŞEMA (GAME EVENT)
