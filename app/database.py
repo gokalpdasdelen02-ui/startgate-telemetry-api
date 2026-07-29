@@ -1,12 +1,12 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
-# veritabanındaki dosyaların yerini belirliyoruz.
-SQLALCHEMY_DATABASE_URL = "sqlite:///./telemetry.db"
+from app.settings import settings
 
 # motoru oluşturuyoruz.
 engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    settings.database_url,
+    connect_args={"check_same_thread": False},
 )
 
 # veritabanı işlemleri için oturum oluşturuyoruz.
