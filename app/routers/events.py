@@ -58,15 +58,22 @@ def get_events(
     ),
     db: Session = Depends(get_db),
 ):
-    total = db.query(models.GameEvent).count()
+    try:
+        total = db.query(models.GameEvent).count()
 
-    events = (
-        db.query(models.GameEvent)
-        .order_by(models.GameEvent.id.desc())
-        .offset(skip)
-        .limit(limit)
-        .all()
-    )
+        events = (
+            db.query(models.GameEvent)
+            .order_by(models.GameEvent.id.desc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Events could not be retrieved from the database.",
+        ) from exc
 
     return {
         "status": "success",
@@ -102,18 +109,26 @@ def get_events_by_user(
     ),
     db: Session = Depends(get_db),
 ):
-    user_events_query = db.query(models.GameEvent).filter(
-        models.GameEvent.user_id == user_id
-    )
+    try:
+        user_events_query = db.query(models.GameEvent).filter(
+            models.GameEvent.user_id == user_id
+        )
 
-    total = user_events_query.count()
+        total = user_events_query.count()
 
-    events = (
-        user_events_query.order_by(models.GameEvent.id.desc())
-        .offset(skip)
-        .limit(limit)
-        .all()
-    )
+        events = (
+            user_events_query.order_by(models.GameEvent.id.desc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="User events could not be retrieved from the database.",
+        ) from exc
 
     return {
         "status": "success",
