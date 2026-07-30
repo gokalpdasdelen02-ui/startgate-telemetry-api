@@ -6,7 +6,9 @@ from app.database import get_db
 from app.security import require_api_key
 
 # tüm rotaların başına /events ekleyen kod
-router = APIRouter(prefix="/events", tags=["Events"])
+router = APIRouter(
+    prefix="/events", tags=["Events"], dependencies=[Depends(require_api_key)]
+)
 
 
 # prefix kullandığımız için /events yazmak yerine / yazabiliyoruz.
@@ -14,7 +16,6 @@ router = APIRouter(prefix="/events", tags=["Events"])
     "/",
     status_code=status.HTTP_201_CREATED,
     response_model=schemas.EventCreateResponse,
-    dependencies=[Depends(require_api_key)],
 )
 def create_event(event: schemas.GameEvent, db: Session = Depends(get_db)):
     db_event = models.GameEvent(**event.model_dump())

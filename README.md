@@ -200,8 +200,8 @@ Endpointlerin erişim durumu:
 | ---------------------------- | ------------------: |
 | `GET /health`                |               Hayır |
 | `POST /events/`              |                Evet |
-| `GET /events/`               |               Hayır |
-| `GET /events/user/{user_id}` |               Hayır |
+| `GET /events/`               |                Evet |
+| `GET /events/user/{user_id}` |                Evet |
 
 Eksik veya geçersiz API anahtarında servis:
 
