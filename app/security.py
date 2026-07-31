@@ -11,7 +11,8 @@ API_KEY_HEADER_NAME = "X-API-Key"
 api_key_header = APIKeyHeader(
     name=API_KEY_HEADER_NAME,
     scheme_name="Telemetry API Key",
-    description="Olay oluşturma işlemlerinde gerekli API anahtarı.",
+    description="Telemetri olaylarını oluşturma ve sorgulama "
+    "İşlemlerinde gerekili API anahtarı",
     auto_error=False,
 )
 

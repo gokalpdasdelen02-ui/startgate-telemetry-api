@@ -68,7 +68,7 @@ def valid_info_event() -> dict[str, object]:
         "os_version": "macOS 15",
         "device": "Macbook Air",
         "client_ts": 1753354000,
-        "user_id": "test-session-001",
+        "user_id": "test-user-001",
         "session_id": "test-session-001",
         "session_num": 1,
         "sdk_version": "1.0.0",

@@ -7,3 +7,8 @@ telemetry.db.backup
 .env.*
 !.env.example
 .DS_Store
+
+# test and coverage artifacts
+.pytest_cache/
+.coverage
+.htmlcov/
