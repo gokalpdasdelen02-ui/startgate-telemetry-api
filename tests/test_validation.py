@@ -7,7 +7,7 @@ def test_create_event_with_extra_top_level_field_returns_422(
     valid_info_event,
 ):
     event_payload = deepcopy(valid_info_event)
-    event_payload["unxpected_field"] = "unexpected-value"
+    event_payload["unexpected_field"] = "unexpected-value"
 
     response = client.post(
         "/events/",
@@ -20,7 +20,7 @@ def test_create_event_with_extra_top_level_field_returns_422(
     errors = response.json()["detail"]
 
     assert any(
-        error["type"] == "extra_forbidden" and error["loc"][-1] == "unxpected_field"
+        error["type"] == "extra_forbidden" and error["loc"][-1] == "unexpected_field"
         for error in errors
     )
 
@@ -50,7 +50,7 @@ def test_create_event_with_extra_event_data_field_returns_422(
     )
 
 
-def test_create_event_with_blank_message_return_422(
+def test_create_event_with_blank_message_returns_422(
     client,
     auth_headers,
     valid_info_event,
@@ -76,7 +76,7 @@ def test_create_event_with_blank_message_return_422(
     )
 
 
-def test_create_event__trims_message_whitespace(
+def test_create_event_trims_message_whitespace(
     client,
     auth_headers,
     valid_info_event,
