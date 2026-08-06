@@ -84,3 +84,67 @@ def test_get_active_user_statistics(
 
     assert response_body["status"] == "success"
     assert response_body["active_users"] == 2
+
+
+def test_get_active_user_statistics_filters_by_date_range(
+    client,
+    auth_headers,
+    valid_info_event,
+):
+    old_user_event = deepcopy(valid_info_event)
+    old_user_event["timestamp"] = "2026-08-01T10:00:00Z"
+    old_user_event["user_id"] = "old-user"
+    old_user_event["session_id"] = "old-user-session"
+
+    first_matching_event = deepcopy(valid_info_event)
+    first_matching_event["timestamp"] = "2026-08-05T10:00:00Z"
+    first_matching_event["user_id"] = "matching-user-001"
+    first_matching_event["session_id"] = "matching-session-001"
+
+    same_user_second_event = deepcopy(valid_info_event)
+    same_user_second_event["timestamp"] = "2026-08-05T12:00:00Z"
+    same_user_second_event["user_id"] = "matching-user-001"
+    same_user_second_event["session_id"] = "matching-session-002"
+
+    second_matching_user_event = deepcopy(valid_info_event)
+    second_matching_user_event["timestamp"] = "2026-08-06T10:00:00Z"
+    second_matching_user_event["user_id"] = "matching-user-002"
+    second_matching_user_event["session_id"] = "matching-session-003"
+
+    future_user_event = deepcopy(valid_info_event)
+    future_user_event["timestamp"] = "2026-08-10T10:00:00Z"
+    future_user_event["user_id"] = "future-user"
+    future_user_event["session_id"] = "future-user-session"
+
+    events_to_create = [
+        old_user_event,
+        first_matching_event,
+        same_user_second_event,
+        second_matching_user_event,
+        future_user_event,
+    ]
+
+    for event_payload in events_to_create:
+        create_response = client.post(
+            "/events/",
+            json=event_payload,
+            headers=auth_headers,
+        )
+
+        assert create_response.status_code == 201, create_response.json()
+
+    response = client.get(
+        "/stats/active-users",
+        params={
+            "date_from": "2026-08-04T00:00:00Z",
+            "date_to": "2026-08-06T23:59:59Z",
+        },
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 200
+
+    response_body = response.json()
+
+    assert response_body["status"] == "success"
+    assert response_body["active_users"] == 2

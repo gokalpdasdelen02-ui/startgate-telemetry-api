@@ -329,3 +329,102 @@ def test_get_events_with_reversed_date_range_returns_422(
     assert response.json() == {
         "detail": "date_from date_to değerinden sonra olamaz.",
     }
+
+
+def test_get_events_filters_by_date_range(
+    client,
+    auth_headers,
+    valid_info_event,
+):
+    old_event = deepcopy(valid_info_event)
+    old_event["timestamp"] = "2026-08-01T10:00:00Z"
+    old_event["session_id"] = "date-filter-old-session"
+    old_event["event_data"]["message"] = "Old event"
+
+    matching_event = deepcopy(valid_info_event)
+    matching_event["timestamp"] = "2026-08-05T10:00:00Z"
+    matching_event["session_id"] = "date-filter-matching-session"
+    matching_event["event_data"]["message"] = "Matching event"
+
+    new_event = deepcopy(valid_info_event)
+    new_event["timestamp"] = "2026-08-10T10:00:00Z"
+    new_event["session_id"] = "date-filter-new-session"
+    new_event["event_data"]["message"] = "New event"
+
+    events_to_create = [
+        old_event,
+        matching_event,
+        new_event,
+    ]
+
+    for event_payload in events_to_create:
+        create_response = client.post(
+            "/events/",
+            json=event_payload,
+            headers=auth_headers,
+        )
+
+        assert create_response.status_code == 201, create_response.json()
+
+    response = client.get(
+        "/events/",
+        params={
+            "date_from": "2026-08-04T00:00:00Z",
+            "date_to": "2026-08-06T23:59:59Z",
+        },
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 200
+
+    response_body = response.json()
+
+    assert response_body["total"] == 1
+    assert response_body["count"] == 1
+    assert len(response_body["data"]) == 1
+
+    returned_event = response_body["data"][0]
+
+    assert returned_event["session_id"] == "date-filter-matching-session"
+    assert returned_event["event_data"]["message"] == "Matching event"
+
+
+def test_batch_with_invalid_event_does_not_create_any_records(
+    client,
+    auth_headers,
+    valid_info_event,
+):
+    valid_event = deepcopy(valid_info_event)
+    valid_event["session_id"] = "atomic-batch-valid-session"
+    valid_event["event_data"]["message"] = "Valid event in invalid batch"
+
+    invalid_event = deepcopy(valid_info_event)
+    invalid_event["session_id"] = "atomic-batch-invalid-session"
+    invalid_event["session_num"] = 0
+    invalid_event["event_data"]["message"] = "Invalid event in batch"
+
+    batch_response = client.post(
+        "/events/batch",
+        json={
+            "events": [
+                valid_event,
+                invalid_event,
+            ]
+        },
+        headers=auth_headers,
+    )
+
+    assert batch_response.status_code == 422
+
+    list_response = client.get(
+        "/events/",
+        headers=auth_headers,
+    )
+
+    assert list_response.status_code == 200
+
+    response_body = list_response.json()
+
+    assert response_body["total"] == 0
+    assert response_body["count"] == 0
+    assert response_body["data"] == []

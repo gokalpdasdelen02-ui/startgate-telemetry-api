@@ -95,7 +95,7 @@ def get_active_user_count(
 
     if date_from is not None and date_to is not None and date_from > date_to:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="date_from, date_to değerinden sonra olamaz.",
         )
 
