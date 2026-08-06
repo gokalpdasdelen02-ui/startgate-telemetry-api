@@ -183,7 +183,7 @@ def test_get_events_with_skip_beyond_total_returns_empty_page(
         ] = f"Skip beyond total event {event_number}"
 
         create_response = client.post(
-            "/events",
+            "/events/",
             json=event_payload,
             headers=auth_headers,
         )

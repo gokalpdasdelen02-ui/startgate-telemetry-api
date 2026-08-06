@@ -12,3 +12,9 @@ telemetry.db.backup
 .pytest_cache/
 .coverage
 .htmlcov/
+
+
+logs/
+
+*.pyc
+.pytest_cache/

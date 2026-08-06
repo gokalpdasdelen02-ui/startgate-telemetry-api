@@ -215,3 +215,117 @@ def test_get_events_for_unknown_user_returns_empty_list(
     assert response_body["skip"] == 0
     assert response_body["limit"] == 10
     assert response_body["data"] == []
+
+
+def test_create_batch_events_returns_201(
+    client,
+    auth_headers,
+    valid_info_event,
+):
+    first_event = deepcopy(valid_info_event)
+    first_event["session_id"] = "batch-session-001"
+    first_event["event_data"]["message"] = "First batch event"
+
+    second_event = deepcopy(valid_info_event)
+    second_event["user_id"] = "batch-user-002"
+    second_event["session_id"] = "batch-session-002"
+    second_event["event_data"]["message"] = "Second batch event"
+
+    response = client.post(
+        "/events/batch",
+        json={
+            "events": [
+                first_event,
+                second_event,
+            ]
+        },
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 201
+
+    response_body = response.json()
+
+    assert response_body["status"] == "success"
+    assert response_body["created_count"] == 2
+    assert len(response_body["data"]) == 2
+
+
+def test_create_batch_with_empty_list_returns_422(client, auth_headers):
+    response = client.post(
+        "/events/batch",
+        json={"events": []},
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 422
+
+
+def test_get_events_filters_by_category(
+    client,
+    auth_headers,
+    valid_info_event,
+):
+    info_event = deepcopy(valid_info_event)
+    info_event["session_id"] = "category-info-session"
+
+    business_event = deepcopy(valid_info_event)
+    business_event["category"] = "business"
+    business_event["user_id"] = "business-user"
+    business_event["session_id"] = "category-business-session"
+    business_event["event_data"] = {
+        "currency": "TRY",
+        "amount": 100,
+        "cart_type": "shop",
+    }
+
+    info_response = client.post(
+        "/events/",
+        json=info_event,
+        headers=auth_headers,
+    )
+
+    business_response = client.post(
+        "/events/",
+        json=business_event,
+        headers=auth_headers,
+    )
+
+    assert info_response.status_code == 201
+    assert business_response.status_code == 201
+
+    response = client.get(
+        "/events/",
+        params={
+            "category": "business",
+        },
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 200
+
+    response_body = response.json()
+
+    assert response_body["total"] == 1
+    assert response_body["count"] == 1
+    assert len(response_body["data"]) == 1
+    assert response_body["data"][0]["category"] == "business"
+
+
+def test_get_events_with_reversed_date_range_returns_422(
+    client,
+    auth_headers,
+):
+    response = client.get(
+        "/events/",
+        params={
+            "date_from": "2026-08-10T00:00:00Z",
+            "date_to": "2026-08-01T00:00:00Z",
+        },
+        headers=auth_headers,
+    )
+
+    assert response.status_code == 422
+    assert response.json() == {
+        "detail": "date_from date_to değerinden sonra olamaz.",
+    }

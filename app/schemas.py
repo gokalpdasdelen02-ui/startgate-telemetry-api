@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Optional, Union, Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -267,6 +267,59 @@ class GameEvent(BaseModel):
         return self
 
 
+class BatchEventCreateRequest(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+        json_schema_extra={
+            "examples": [
+                {
+                    "events": [
+                        {
+                            "category": "info",
+                            "platform": "Web",
+                            "os_version": "macOS 15",
+                            "device": "MacBook Air",
+                            "client_ts": 1754388000,
+                            "user_id": "batch-user-001",
+                            "session_id": "batch-session-001",
+                            "session_num": 1,
+                            "sdk_version": "1.0.0",
+                            "manufacturer": "Apple",
+                            "v": "1.0.0",
+                            "event_data": {"message": "Birinci batch test eventi"},
+                        },
+                        {
+                            "category": "business",
+                            "platform": "Web",
+                            "os_version": "macOS 15",
+                            "device": "MacBook Air",
+                            "client_ts": 1754388001,
+                            "user_id": "batch-user-002",
+                            "session_id": "batch-session-002",
+                            "session_num": 1,
+                            "sdk_version": "1.0.0",
+                            "manufacturer": "Apple",
+                            "v": "1.0.0",
+                            "event_data": {
+                                "currency": "TRY",
+                                "amount": 2500,
+                                "cart_type": "shop",
+                            },
+                        },
+                    ]
+                }
+            ]
+        },
+    )
+
+    events: list[GameEvent] = Field(
+        ...,
+        min_length=1,
+        max_length=100,
+        description="Tek istekte kaydedilecek etkinlikler.",
+    )
+
+
 # CEVAP ŞEMASI
 class EventResponse(GameEvent):
     model_config = ConfigDict(from_attributes=True)
@@ -278,6 +331,46 @@ class EventCreateResponse(BaseModel):
     status: Literal["success"]
     message: str
     data: EventResponse
+
+
+class BatchEventCreateResponse(BaseModel):
+    status: Literal["success"]
+    message: str
+    created_count: int = Field(
+        ...,
+        ge=1,
+        le=100,
+        description="Başarıyla kaydedilen etkinlik sayısı",
+    )
+    data: list[EventResponse] = Field(
+        ...,
+        min_length=1,
+        max_length=100,
+        description="Veritabanına kaydedilen etkinlikler",
+    )
+
+
+class DailyEventCount(BaseModel):
+    date: date
+    event_count: int = Field(
+        ...,
+        ge=0,
+        description="Belirlenen gündeki toplam etkinlil sayısı",
+    )
+
+
+class DailyEventStatsResponse(BaseModel):
+    status: Literal["success"]
+    data: list[DailyEventCount]
+
+
+class ActiveUserStatsResponse(BaseModel):
+    status: Literal["success"]
+    active_users: int = Field(
+        ...,
+        ge=0,
+        description="En az bir etkinlik gönderen kullanıcı sayısı",
+    )
 
 
 class EventListResponse(BaseModel):
