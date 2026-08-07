@@ -433,7 +433,7 @@ API aşağıdaki doğrulamaları uygular:
 Doğrulama hatalarında API:
 
 ```text
-422 Unprocessable Entity
+422 Unprocessable Content
 ```
 
 durum kodunu döndürür.
