@@ -558,7 +558,3 @@ Coverage dışında kalan satırların önemli bir bölümü, kasıtlı veritaba
 - Gelişmiş istatistik ve raporlama endpointleri
 - Opsiyonel yük testi
 - Üretim ortamına uygun deployment yapılandırması
-
-```
-
-```

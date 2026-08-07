@@ -4,8 +4,6 @@
 
 Bu hafta telemetri API servisinin güvenilirliğini artırmak, olayları daha gelişmiş biçimde sorgulamak ve verilerden temel istatistikler üretmek amaçlandı.
 
-## Yapimde sorgulamak ve verilerden temel istatistikler üretmek amaçlandı.
-
 ## Yapılan Çalışmalar
 
 ### 1. Otomatik API Testleri
